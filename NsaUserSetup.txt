@@ -1,0 +1,84 @@
+@startuml
+'skinparam monochrome true
+skinparam BoxPadding 30
+
+autonumber "<color black>[0]"
+
+title <back:cadetblue><size:24> SgNB Addition </size></back>
+
+box "LTE"
+	participant "eNB" as eNB
+	participant "iPHY" as iPHY
+end box
+
+participant "UEC" as UEC
+participant "5GUE-Proxy" as UECP
+
+box "5GUE-L2-NRT"
+	participant "5GUE-L2-HI" as L2HI
+end box
+
+box "5GUE-L2-RT"
+	participant "5GUE-L2-LO" as L2LO
+	participant "5GUE-L2-SM" as L2SM
+end box
+
+eNB -> iPHY : [[SRB1]](RRC Connection Reconfiguration)
+iPHY -> UEC : [[DL_DCCH_T]](RRC Connection Reconfiguration)
+
+UEC -> UECP : [[CTRL_ADD_UE_DC]](NR-RRC Reconfiguration)
+
+	rnote over UECP
+		<i><b>Specific Actions for this MSC:</b></i>
+		1. Create UE Context
+		2. Decode NR-RRC Reconfiguration
+		3. Prepare L3-L2 messages for 
+		    User and Bearer Setup
+	endrnote
+
+UECP -> L2HI : [[HiUserUe_BearerSetupReq]]
+
+	rnote over L2HI
+		Refer to [[HiUserUe_BearerSetupReq HiUserUe_BearerSetupReq Handling]]
+		<i><b>Specific Actions for this MSC:</b></i>
+		1. Create corresponding RLC Entity
+		with the specified RLC Parameters
+	endrnote
+
+L2HI -> UECP : [[HiUserUe_BearerSetupResp]]
+
+UECP -> L2SM : [[SmUserUe_UserSetupReq]]
+	rnote over L2SM
+		Refer to [[SmUserUe_UserSetupReq SmUserUe_UserSetupReq Handling]]
+		<i><b>Specific Actions for this MSC:</b></i>
+		1. activate corresponding UE Context
+		2. store configurations for L2SM procedures
+	endrnote
+L2SM -> UECP : [[SmUserUe_UserSetupResp]]
+
+UECP -> L2LO : [[LoUserUe_UserSetupReq]]
+	rnote over L2LO
+		Refer to [[LoUserUe_UserSetupReq LoUserUe_UserSetupReq Handling]]
+		<i><b>Specific Actions for this MSC:</b></i>
+		1. activate corresponding UE Context
+		2. store configurations for L2LO procedures
+	endrnote
+	
+L2LO -> L2SM : [[LoCtrlUe_RandomAccessResourceReq]]
+L2LO -> UECP : [[LoUserUe_UserSetupResp]]
+
+UECP -> UEC : [[CTRL_ADD_UE_DC_RESP]]
+
+== Random Access Procedure ==
+	rnote over L2SM
+		Refer to [[LoCtrlUe_RandomAccessResourceReq LoCtrlUe_RandomAccessResourceReq Handling]]
+		<i><b>Specific Actions for this MSC:</b></i>
+		1. start Random Access procedure
+	endrnote
+...
+L2SM -> UECP : [[SmUserUe_ConnectionEstablishedInd]]
+====
+
+UECP -> UEC : [[CTRL_UE_RACH_COMPLETE]]
+
+@enduml

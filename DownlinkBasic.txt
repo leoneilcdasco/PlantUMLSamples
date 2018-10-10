@@ -6,10 +6,8 @@ autonumber "<color black>[0]"
 
 title <back:cadetblue><size:24> Downlink Data Transmission </size></back>
 
-box "UEC"
-	participant "5GUE-Proxy" as UECP
-	participant "NR-PDCP" as PDCP
-end box
+participant "UEC" as UEC
+participant "5GUE-Proxy" as UECP
 
 box "5GUE-L2-NRT"
 	participant "5GUE-L2-HI" as L2HI
@@ -29,8 +27,6 @@ box "5G-NB"
 	participant "5G-L2-PS" as L2PS
 end box
 
-...
-L1DL -> L2SM : [[DlDataUe_SyncInd]]
 ... <back:cadetblue><size:24>NR Slot within DlData_PdcchSendReq Timing Window </size></back>  ...
 
 == DL Grant Reception from L2-PS ==
@@ -42,23 +38,20 @@ L2PS -> L2SM : [[SmDataUe_PdcchInd]](DL DCI)
 rnote over L2SM
 	Refer to [[SmDataUe_PdcchInd+Handling SmDataUe_PdcchInd Handling]]
 	<i><b>Specific Actions for this MSC:</b></i>
-	1. Get subcell and UE context
-	2. Decode DL Grant 
-	3. Schedule reception of DL data
+	1. Decode DL Grant 
+	2. Schedule reception of DL data
 	through DlDataUe_PdschReceiveReq
-	4. Schedule transmission of UCI data 
+	3. Schedule transmission of UCI data 
 	through UlDataUe_PucchSendReq
-	5. Schedule reception of DCI 
+	4. Schedule reception of DCI 
 	through DlDataUe_PdcchReceiveReq
 endrnote
 
 ====
 
-...
-L1DL -> L2SM : [[DlDataUe_SyncInd]]
 ... <back:cadetblue><size:24>NR Slot within DlDataUe_PdschReceiveReq Timing Window </size></back>  ...
 
-== DL Data Transfer from 5GUE-L2LO to 5GUE-L1-DL ==
+== DL Grand and DL Data Transfer from 5GUE-L1-DL to 5GUE-L2LO ==
 
 L1DL -> L2SM : [[DlDataUe_SyncInd]]
 
@@ -66,8 +59,6 @@ L2SM -> L1DL : [[UlDataUe_NrSlotTypeReq]]
 L2SM -> L1DL : [[DlDataUe_PdcchReceiveReq]]
 L2SM -> L1DL : [[DlDataUe_PdschReceiveReq]]
 
-...
-L1DL -> L2SM : [[DlDataUe_SyncInd]]()
 ... <back:cadetblue><size:24>NR Slot within DlDataUe_PdcchReceiveResp* Timing Window </size></back>  ...
 
 L1DL -> L2SM : [[DlDataUe_SyncInd]]
@@ -134,19 +125,22 @@ rnote over L2HI
 	2. Map Local UE ID to Global UE ID
 endrnote
 
+alt RLC ACK Received
+	L2HI -> UECP : [[HiSgnlUe_AckStatusPduInd]]
+end
+
 group for each bearer
 
 	alt DRB/Traffic
-		L2HI -> PDCP : [[DL_DTCH]](RLC SDU Containing Traffic Data)
+		L2HI -> UEC : [[DL_DTCH]](RLC SDU Containing Traffic Data)
 	else SRB/Signalling
-		L2HI -> UECP : [[DL_DCCH]](RLC SDU Containing RRC Message)
+		L2HI -> UECP : [[HiSgnlUe_SrbReceiveInd]](RLC SDU Containing RRC Message)
+		UECP -> UEC : [[DL_DCCH]](RLC SDU Containing RRC Message)
 	end
 
 end
 ====
-   
-...
-L1DL -> L2SM : [[DlDataUe_SyncInd]]
+
 ... <back:cadetblue><size:24>NR Slot within UlDataUe_PucchSendReq Timing Window </size></back>  ...
 
 == DL-HARQ Response Through PUCCH ==
